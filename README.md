@@ -7,38 +7,38 @@ Before editing scripts in this repository,
 - gather raw data on infrastructure and risks, 
 - obtain H3 data for your project area,
 - assign accidental and deliberate risks to sub-sectors,
-- map sub-sectors to sectors to create highly dependent infrastructure counts,
+- map sub-sectors to sectors to create highly dependent infrastructure counts, <br>
 and - 
 
 ### Folder Structure 
 Project Folder
-> H3 Base
-> H3 Edits
-> Raw Infrastructure Data
-> Cleaned Infrastructure Data
->> Linear Data Cleaned
->> Point Data Cleaned
->> Polygon Data Cleaned
-> Raw Risk Data
-> Scripts (inlcuded in this repository)
-> Dashboard (included in this repository)
+> H3 Base <br>
+> H3 Edits<br>
+> Raw Infrastructure Data <br>
+> Cleaned Infrastructure Data <br>
+>> Linear Data Cleaned <br>
+>> Point Data Cleaned <br>
+>> Polygon Data Cleaned <br>
+> Raw Risk Data <br>
+> Scripts (inlcuded in this repository) <br>
+> Dashboard (included in this repository) <br>
 <br>
 <br>
 ### Scripts Run Order
-*Data_Axle_Cleaning.ipynb*
-*Infrastructure_Point_Cleaning.ipynb*
-*Infrastructure_Polygon_Cleaning.ipynb*
-*Infrastructure_Linear_Cleaning.ipynb*
-*Infrastructure_Point_To_Hexbin.ipynb*
-*Infrasructure_Polygon_to_Hexbin.ipynb*
-*Infrasructure_Line_to_Hexbin.ipynb*
-*Infrastructure_Merge.ipynb*
-*Infrastructure_Community_Lifelines_Crosswalk.ipynb*
-*Risk_To_Hexbin.ipynb*
-*Risk_Merge.ipynb:*
-*Risk_Dependencies.ipynb*
-*Final_Dataset_Creation.ipynb*
-*Final_Data_to_Parquet.ipynb*
+*Data_Axle_Cleaning.ipynb* <br>
+*Infrastructure_Point_Cleaning.ipynb* <br>
+*Infrastructure_Polygon_Cleaning.ipynb* <br>
+*Infrastructure_Linear_Cleaning.ipynb* <br>
+*Infrastructure_Point_To_Hexbin.ipynb* <br>
+*Infrasructure_Polygon_to_Hexbin.ipynb* <br>
+*Infrasructure_Line_to_Hexbin.ipynb* <br>
+*Infrastructure_Merge.ipynb* <br>
+*Infrastructure_Community_Lifelines_Crosswalk.ipynb* <br>
+*Risk_To_Hexbin.ipynb* <br>
+*Risk_Merge.ipynb* <br>
+*Risk_Dependencies.ipynb* <br>
+*Final_Dataset_Creation.ipynb* <br>
+*Final_Data_to_Parquet.ipynb* <br>
 <br>
 <br>
 About the Scripts:
