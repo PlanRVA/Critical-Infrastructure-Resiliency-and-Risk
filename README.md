@@ -2,29 +2,34 @@
 
 The critical infrastructure study by PlanRVA is an initial inquiry into the resiliency and risk of our critical infrastructure of the region. This builds on previous projects collecting critical infrastructure data for the region and lays the groundwork for maintaining an iteractive dashboard online.
 
-Before editing scripts in this repository,
-- setup folder structure (one recommended here),
-- gather raw data on infrastructure and risks, 
-- obtain H3 data for your project area,
-- assign accidental and deliberate risks to sub-sectors,
-- map sub-sectors to sectors to create highly dependent infrastructure counts, <br>
-and - 
 
-### Folder Structure 
-Project Folder
-> H3 Base <br>
-> H3 Edits<br>
-> Raw Infrastructure Data <br>
-> Cleaned Infrastructure Data <br>
->> Linear Data Cleaned <br>
->> Point Data Cleaned <br>
->> Polygon Data Cleaned <br>
-> Raw Risk Data <br>
-> Scripts (inlcuded in this repository) <br>
-> Dashboard (included in this repository) <br>
+---
+Before editing scripts in this repository, <br>
+- setup folder structure (one recommended here), <br>
+- gather raw data on infrastructure and risks, <br>
+- obtain H3 data for your project area, <br>
+- assign accidental and deliberate risks to sub-sectors, <br>
+- map sub-sectors to sectors to create highly dependent infrastructure counts, <br>
+- setup coding environment with requirements.txt, <br>
+and - ? <br>
 <br>
 <br>
-### Scripts Run Order
+### Folder Structure <br> 
+Project Folder/
+├── H3 Base <br> 
+├── H3 Edits <br>
+├── Raw Infrastructure Data <br>
+├── Cleaned Infrastructure Data/ <br>
+│   ├── Linear Data Cleaned <br>
+│   ├── Point Data Cleaned <br>
+│   ├── Polygon Data Cleaned <br>
+├── Raw Risk Data <br>
+├── Scripts (included in this repository) <br>
+├── Dashboard (inlcuded in this repository) <br>
+└── README.md <br>
+<br>
+<br>
+### Scripts Run Order <br>
 *Data_Axle_Cleaning.ipynb* <br>
 *Infrastructure_Point_Cleaning.ipynb* <br>
 *Infrastructure_Polygon_Cleaning.ipynb* <br>
@@ -41,7 +46,7 @@ Project Folder
 *Final_Data_to_Parquet.ipynb* <br>
 <br>
 <br>
-About the Scripts:
+About the Scripts: <br>
 *Data_Axle_Cleaning.ipynb* takes DataAxle shapefiles and sorts data by NAICS codes, assigns sector and sub-sector categories based on NAICS.<br>
 *Infrastructure_Point_Cleaning.ipynb* takes all point data layers from Critical Infrastructure, assigns sectors and sub-sectors, and saves into a shapefile based on sector, adds DataAxle point data to sets.<br>
 *Infrastructure_Polygon_Cleaning.ipynb* takes all the polygon data layers from Critical Infrastructure, assigns sectors and sub-sectors, and saves into a shapefile based on sector.<br>
