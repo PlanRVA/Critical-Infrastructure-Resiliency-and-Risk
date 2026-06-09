@@ -14,8 +14,8 @@ Before editing scripts in this repository, <br>
 and - ? <br>
 <br>
 <br>
-### Folder Structure <br> 
-Project Folder/
+### Folder Structure
+Project Folder/ <br> 
 ├── H3 Base <br> 
 ├── H3 Edits <br>
 ├── Raw Infrastructure Data <br>
@@ -24,12 +24,12 @@ Project Folder/
 │   ├── Point Data Cleaned <br>
 │   ├── Polygon Data Cleaned <br>
 ├── Raw Risk Data <br>
-├── Scripts (included in this repository) <br>
-├── Dashboard (inlcuded in this repository) <br>
+├── Scripts <br>
+├── Dashboard <br>
 └── README.md <br>
 <br>
 <br>
-### Scripts Run Order <br>
+### Scripts Run Order
 *Data_Axle_Cleaning.ipynb* <br>
 *Infrastructure_Point_Cleaning.ipynb* <br>
 *Infrastructure_Polygon_Cleaning.ipynb* <br>
@@ -46,7 +46,7 @@ Project Folder/
 *Final_Data_to_Parquet.ipynb* <br>
 <br>
 <br>
-About the Scripts: <br>
+**About the Scripts:** 
 *Data_Axle_Cleaning.ipynb* takes DataAxle shapefiles and sorts data by NAICS codes, assigns sector and sub-sector categories based on NAICS.<br>
 *Infrastructure_Point_Cleaning.ipynb* takes all point data layers from Critical Infrastructure, assigns sectors and sub-sectors, and saves into a shapefile based on sector, adds DataAxle point data to sets.<br>
 *Infrastructure_Polygon_Cleaning.ipynb* takes all the polygon data layers from Critical Infrastructure, assigns sectors and sub-sectors, and saves into a shapefile based on sector.<br>
