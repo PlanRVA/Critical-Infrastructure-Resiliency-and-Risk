@@ -11,7 +11,7 @@ Before editing scripts in this repository, <br>
 ▫️ assign accidental and deliberate risks to sub-sectors, <br>
 ▫️ map sub-sectors to sectors to create highly dependent infrastructure counts, <br>
 ▫️ setup coding environment with requirements.txt, <br>
-and - ?
+and go through the scripts in the run order.
 
 
 <br>
