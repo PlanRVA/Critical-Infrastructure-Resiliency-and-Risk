@@ -71,6 +71,6 @@ and go through the scripts in the run order.
 <br>
 <br>
 ✏️ Note that packages used in this project like GDAL, PROJ, pyproj, pyogrio, and scipy can vary by platform and are often installed automatically as dependencies of GeoPandas and Rasterio. Only direct dependencies are listed in the requirements.txt.
-
+<br>
 Visit [PlanRVA's](https://planrva.org/) website to learn more about our work.<br>
 Project contact: Elizabeth Greenwell, egreenwell@planrva.org
