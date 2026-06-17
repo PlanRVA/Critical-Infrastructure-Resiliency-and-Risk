@@ -6,6 +6,7 @@ The critical infrastructure study by PlanRVA is an initial inquiry into the resi
 ### Workflow 🛠️
 Before editing scripts in this repository, <br>
 ▫️ setup folder structure (one recommended here), <br>
+▫️ If using Github, setup gitignore, <br>
 ▫️ gather raw data on infrastructure and risks, <br>
 ▫️ obtain [H3](https://github.com/uber/h3) data for your project area, <br>
 ▫️ assign accidental and deliberate risks to sub-sectors, <br>
@@ -69,6 +70,7 @@ and go through the scripts in the run order.
 
 <br>
 <br>
+✏️ Note that packages used in this project like GDAL, PROJ, pyproj, pyogrio, and scipy can vary by platform and are often installed automatically as dependencies of GeoPandas and Rasterio. Only direct dependencies are listed in the requirements.txt.
 
 Visit [PlanRVA's](https://planrva.org/) website to learn more about our work.<br>
 Project contact: Elizabeth Greenwell, egreenwell@planrva.org

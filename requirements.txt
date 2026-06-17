@@ -1,0 +1,12 @@
+geopandas
+pandas
+numpy
+shapely
+matplotlib
+folium
+fiona
+rasterio
+rasterstats
+h3
+mapclassify
+contextily
