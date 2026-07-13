@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Title Your Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<!-- Can link a Google Font here-->
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<!-- CSS in  static folder -->
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='stylesheet.css') }}">
+
+</head>
+<body>
+<!-- Loading overlay: self-contained, never wraps other content -->
+<div id="loading"><div class="spin"></div>Loading data…</div>
+
+<!-- Error banner: hidden until an error occurs -->
+<div id="error-banner"></div>
+
+<!-- LEFT PANEL -->
+<div id="side-panel">
+  <div class="panel-header">
+    <h1>Name Your Infrastructure Index</h1>
+    <p>Describe Your Dashboard.</p>
+  </div>
+  <div class="panel-section">
+    <div class="index-meter">
+      <div class="stat-row" style="margin-bottom:0">
+        <span class="stat-label">Composite spread (σ)</span>
+        <span class="stat-val" id="stat-mean" style="color:var(--composite)">—</span>
+      </div>
+      <div class="meter-bar-bg">
+        <div class="meter-bar-fill" id="meter-fill" style="width:0%"></div>
+      </div>
+      <div class="meter-labels"><span>0.0</span><span>0.25</span><span>.5</span></div>
+      <p class="stat-label"><strong style="color:var(--text)">Data note:</strong> Composite spread shown is reflective of active dimensions. Spread is the standard deviation of the composite index across all hexes — higher means the selected field differentiates hexes more.</p>
+    </div>
+  </div>
+  <div class="accordion-section" style="flex:1;overflow-y:auto;min-height:0">
+      <div class="accordion-section">
+          <button class="accordion-btn" onclick="toggleAcc(this)">
+            About this index
+          </button>
+          <div class="accordion-body">
+            <p>Tell everyone about this dashboard. Each hexagon in the grid represents a geographic unit scored against selected sectors or lifelines. Composite scores represent normalized data.</p>
+          </div>
+      </div>
+      <div class="accordion-section">
+          <button class="accordion-btn" onclick="toggleAcc(this)">
+            Data sources 
+          </button>
+          <div class="accordion-body">
+            <p>Citations and links here are helpful.</p>
+          </div>
+      </div>
+      <div class="accordion-section">
+          <button class="accordion-btn" onclick="toggleAcc(this)">
+            How to use the map 
+          </button>
+          <div class="accordion-body">
+            <p>Use the buttons at the top to switch between infrastructure and risk... 
+              Use the dimension toggles above to filter which sector and risk layers contribute to the composite index. Click any hexagon to inspect its sector, risk, and composite scores.</p>
+          </div>
+  </div>
+  </div>
+  <!-- Our dataset used both CISA and FEMA categorization. If you don't need extra toggles, remove here -->
+  <div class="chart-toggle-row">
+    <button class="chart-btn" id="btn-cisa" onclick="toggleChart('cisa')">
+      <i class="ti ti-chart-bar" aria-hidden="true"></i>
+        CISA Sector Totals
+    </button>
+    <button class="chart-btn" id="btn-fema" onclick="toggleChart('fema')">
+      <i class="ti ti-chart-bar" aria-hidden="true"></i>
+          FEMA CL Totals
+    </button>
+  </div>
+  <!-- Charts are at the very bottom of the script, in a section called 'LEFT PANEL CHARTS' and uses function updateStats()-->
+  <div class="chart-wrapper" id="chart-cisa">
+    <canvas id="canvas-cisa" height="180"></canvas>
+  </div>
+  <div class="chart-wrapper" id="chart-fema">
+      <canvas id="canvas-fema" height="180"></canvas>
+  </div>
+
+  <div class="panel-footer">
+    <a class="nav-link back-link" href="https://planrva.org/emergency-management-home/">
+    <span class="arrow">←</span> Back to PlanRVA Website
+    </a>
+    <div class="panel-footer2">
+      <img src="{{url_for('static', filename='PlanRVA_White.png') }}" alt="PlanRVA Image">
+    </div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div id="main-content">
+  <div>
+  <!-- CISA / FEMA Radio Toggle -->
+  <!-- Our dataset used both CISA and FEMA categorization. If you don't need extra toggles, edit here -->
+    <div class="filter-bar" style="border-bottom:1px solid var(--border);padding:10px 24px;background:var(--panel)">
+      <span class="filter-bar-label">Sector Categorization</span>
+      <div class="btn-group" role="radiogroup" aria-label="Sector Categorization">
+        <input type="radio" class="btn-check" name="sector-cat" id="sector-cisa" value="cisa" autocomplete="off" checked>
+        <label class="btn btn-outline-secondary d-flex align-items-center gap-2" for="sector-cisa">
+          <span class="layer-dot" style="background:var(--sector)"></span>
+          CISA Infrastructure Sectors
+        </label>
+        <input type="radio" class="btn-check" name="sector-cat" id="sector-fema" value="fema" autocomplete="off">
+        <label class="btn btn-outline-secondary d-flex align-items-center gap-2" for="sector-fema">
+          <span class="layer-dot" style="background:var(--sector)"></span>
+          FEMA Community Lifelines
+        </label>
+      </div>
+    </div>
+  </div>
+
+    <!-- FILTER BAR -->
+    <div id="filter-bar">
+    <span class="filter-bar-label">Filter</span>
+
+    <!-- CISA group (shown when CISA selected) -->
+    <!-- edit here for your unique project-->
+    <div class="filter-group" id="group-cisa">
+      <div class="filter-dot" style="background:var(--sector)"></div>
+      <select class="filter-select" id="sel-cisa" onchange="applyFilters()">
+        <option value="CIS_Total">Sectors — CISA All</option>
+        <option value="CIS_1">Commercial</option>
+        <option value="CIS_2">Communication</option>
+        <option value="CIS_3">Dams</option>
+        <option value="CIS_4">Emergency Services</option>
+        <option value="CIS_5">Energy</option>
+        <option value="CIS_6">Financial</option>
+        <option value="CIS_7">Food &amp; Agriculture</option>
+        <option value="CIS_8">Government</option>
+        <option value="CIS_9">Healthcare &amp; Public Health</option>
+        <option value="CIS_10">Nuclear</option>
+        <option value="CIS_11">Transportation</option>
+        <option value="CIS_12">Water &amp; Wastewater</option>
+      </select>
+    </div>
+
+    <!-- FEMA group (shown when FEMA selected) -->
+    <!-- edit here for your unique project-->
+    <div class="filter-group" id="group-fema" style="display:none">
+      <div class="filter-dot" style="background:var(--sector)"></div>
+      <select class="filter-select" id="sel-fema" onchange="applyFilters()">
+        <option value="CL_Total">Lifelines — CL All</option>
+        <option value="CL_1">Communication</option>
+        <option value="CL_2">Energy (Power &amp; Fuel)</option>
+        <option value="CL_3">Food, Hydration, Shelter</option>
+        <option value="CL_4">Hazardous Materials</option>
+        <option value="CL_5">Health and Medical</option>
+        <option value="CL_6">Safety and Security</option>
+        <option value="CL_7">Transportation</option>
+        <option value="CL_8">Water Systems</option>
+      </select>
+    </div>
+
+    <!-- Risk group (shown when CISA selected) -->
+    <!-- edit here for your unique project-->
+    <div class="filter-group" id="group-cisa-risk">
+      <div class="filter-dot" style="background:var(--risk)"></div>
+      <select class="filter-select" id="sel-risk-cisa" onchange="applyFilters()">
+        <option value="Risk_CISA">Risk — All</option>
+        <option value="dam_acres">Dam Breach</option>
+        <option value="heat_avg">Extreme Heat</option>
+        <option value="fl_acres">Flood Inundation</option>
+        <option value="sea_acres">Sea Level</option>
+        <option value="fire_avg">Wildfire</option>
+        <option value="pa_acres">Mined Problem Areas</option>
+        <option value="NonGeoRisk">Sector Based Risk</option>
+      </select>
+    </div>
+
+    <!-- Risk group (shown when CISA selected) -->
+    <!-- edit here for your unique project-->
+    <div class="filter-group" id="group-fema-risk" style="display:none">
+      <div class="filter-dot" style="background:var(--risk)"></div>
+      <select class="filter-select" id="sel-risk-fema" onchange="applyFilters()">
+        <option value="Risk_CL">Risk — All</option>
+        <option value="dam_acres">Dam Breach</option>
+        <option value="heat_avg">Extreme Heat</option>
+        <option value="fl_acres">Flood Inundation</option>
+        <option value="sea_acres">Sea Level</option>
+        <option value="fire_avg">Wildfire</option>
+        <option value="pa_acres">Mined Problem Areas</option>
+        <option value="CL_NG_Risk">Sector Based Risk</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <!-- map container currently quite large -->
+  <div id="map-container">
+    <div id="map"></div>
+  </div>
+
+  <!-- CHART -->
+  <!-- this is the scatter plot below the map -->
+  <!-- the section where it is in the script is called CHART and uses function drawScatterChart -->
+  <div id="chart-panel">
+    <div id="chart-header">
+      <h3>H3 Index Distribution — X: H3 Cell Rank &nbsp;|&nbsp; Y: Composite Score</h3>
+        <div id="chart-legend" style="display:flex;gap:12px;margin-left:auto;flex-wrap:wrap">
+          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--sector)"></div>Sector</div>
+          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--risk)"></div>Risk</div>
+          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--composite)"></div>Composite</div>
+        </div>
+      </div>
+      <div id="chart-body">
+        <canvas id="scatter-canvas"></canvas>
+      <div id="scatter-tooltip" style="
+          display:none;
+          position:absolute;
+          pointer-events:none;
+          background:#0d1e2c;
+          border:1px solid #3a5168;
+          border-radius:4px;
+          padding:8px 10px;
+          font-family:'IBM Plex Mono',monospace;
+          font-size:11px;
+          color:#c8daea;
+          white-space:nowrap;
+          z-index:100;
+          line-height:1.6;
+        "></div>
+      </div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+
+// ─── FRIENDLY LABEL MAPS ──────────────────────────────────────────────────────
+// ─── KEYS FOR DATA AND MAPS LABELS
+const CISA_LABELS = {
+  CIS_Total: 'Sectors — CISA All',
+  CIS_1:  'Commercial',
+  CIS_2:  'Communication',
+  CIS_3:  'Dams',
+  CIS_4:  'Emergency Services',
+  CIS_5:  'Energy',
+  CIS_6:  'Financial',
+  CIS_7:  'Food & Agriculture',
+  CIS_8:  'Government',
+  CIS_9:  'Healthcare & Public Health',
+  CIS_10: 'Nuclear',
+  CIS_11: 'Transportation',
+  CIS_12: 'Water & Wastewater'
+};
+const FEMA_LABELS = {
+  CL_Total: 'Lifelines — CL All',
+  CL_1: 'Communication',
+  CL_2: 'Energy (Power & Fuel)',
+  CL_3: 'Food, Hydration, Shelter',
+  CL_4: 'Hazardous Materials',
+  CL_5: 'Health and Medical',
+  CL_6: 'Safety and Security',
+  CL_7: 'Transportation',
+  CL_8: 'Water Systems'
+};
+const RISK_LABELS = {
+  dam_acres:  'Dam Breach',
+  heat_avg:   'Extreme Heat',
+  fl_acres:   'Flood Inundation',
+  sea_acres:  'Sea Level',
+  fire_avg:   'Wildfire',
+  pa_acres:   'Mined Problem Areas',
+  CL_NG_Risk: 'Sector Based Risk',
+  Risk_CISA:  'Risk — CISA All',
+  NonGeoRisk: 'Sector Based Risk',
+  Risk_CL: 'Risk — CL All'
+};
+
+function friendlyLabel(key) {
+  return CISA_LABELS[key] || FEMA_LABELS[key] || RISK_LABELS[key] || key;
+}
+
+// ─── GLOBALS ──────────────────────────────────────────────────────────────────
+let H3_DATA    = [];      // array of flat objects from GeoJSON features
+let numericFields = [];   // field names that are numeric
+let activeLayers = {};    // { fieldName: bool }
+let mapLayers    = [];
+let allGeoJSON   = null;
+
+const SECTOR_COLOR = '#7d68ae';  // purple
+const RISK_COLOR   = '#88a057';  // green
+
+// ─── FIELD COLOR HELPER ───────────────────────────────────────────────────────
+const RISK_FIELD_KEYS = new Set([
+  'dam_acres','heat_avg','fl_acres','sea_acres','fire_avg','pa_acres',
+  'NonGeoRisk','CL_NG_Risk','Risk_CISA','Risk_CL'
+]);
+function dimColor(fieldName) {
+  return RISK_FIELD_KEYS.has(fieldName) ? RISK_COLOR : SECTOR_COLOR;
+}
+
+// ─── MAP - SETUP MAP FRAME ────────────────────────────────────────────────────
+const map = L.map('map', { zoomControl: true }).setView([37.5, -77.4], 9);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap © CARTO', subdomains: 'abcd', maxZoom: 19
+}).addTo(map);
+
+// ─── SECTOR/CATEGORY RADIO TOGGLE ────────────────────────────────────────────
+document.querySelectorAll('input[name="sector-cat"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    const isCisa = document.getElementById('sector-cisa').checked;
+    document.getElementById('group-cisa').style.display = isCisa ? '' : 'none';
+    document.getElementById('group-fema').style.display = isCisa ? 'none' : '';
+    document.getElementById('group-cisa-risk').style.display = isCisa ? '' : 'none';
+    document.getElementById('group-fema-risk').style.display = isCisa ? 'none' : '';
+    applyFilters();
+  });
+});
+
+// ─── WHICH SECTOR FIELD IS ACTIVE ────────────────────────────────────────────
+function activeSectorField() {
+  const isCisa = document.getElementById('sector-cisa').checked;
+  return isCisa
+    ? document.getElementById('sel-cisa').value
+    : document.getElementById('sel-fema').value;
+}
+function activeRiskField() {
+  const isCisa = document.getElementById('sector-cisa').checked;
+  return isCisa
+    ? (document.getElementById('sel-risk-cisa').value || null)
+    : (document.getElementById('sel-risk-fema').value || null);
+}
+
+// ─── ACCORDION TOGGLE HEADERS    ─────────────────────────────────────
+function toggleAcc(btn) {
+  btn.classList.toggle("active");
+
+  const body = btn.nextElementSibling;
+  body.classList.toggle("open");
+}
+
+// ─── INIT — fetches both endpoints, wires everything up ──────────────────────
+// init begins here
+async function init() {
+  try {
+    // 0. Enforce default UI state: CISA, All Infrastructure, All Risk
+    document.getElementById('sector-cisa').checked = true;
+    document.getElementById('sector-fema').checked = false;
+    document.getElementById('group-cisa').style.display      = '';
+    document.getElementById('group-fema').style.display      = 'none';
+    document.getElementById('group-cisa-risk').style.display = '';
+    document.getElementById('group-fema-risk').style.display = 'none';
+    document.getElementById('sel-cisa').value      = 'CIS_Total';
+    document.getElementById('sel-fema').value      = 'CL_Total';
+    document.getElementById('sel-risk-cisa').value = 'Risk_CISA';
+    document.getElementById('sel-risk-fema').value = 'Risk_CL';
+
+
+    // 1. Fetch field names
+    const fRes = await fetch('/fields');
+    numericFields = await fRes.json();
+    if (!Array.isArray(numericFields) || numericFields.length === 0) {
+      throw new Error('No numeric fields returned from /api/fields');
+    }
+
+    // 2. Fetch GeoJSON
+    const gRes = await fetch('/hexdata');
+    allGeoJSON  = await gRes.json();
+    if (!allGeoJSON.features || allGeoJSON.features.length === 0) {
+      throw new Error('No features returned from /api/hexdata');
+    }
+
+// 3. Flatten features into plain objects for stats/chart
+    H3_DATA = allGeoJSON.features.map(f => {
+      const props = { ...f.properties };
+      const ring  = f.geometry?.coordinates?.[0];
+      if (ring) {
+        props._lat = ring.reduce((s, c) => s + c[1], 0) / ring.length;
+        props._lng = ring.reduce((s, c) => s + c[0], 0) / ring.length;
+      }
+      return props;
+    });
+
+    // 4. Normalize each numeric field to 0–1 via percentile rank
+    //    min-max skewed count fields like CIS_Total/Risk_CISA
+    //    toward 0 since a few outlier hexes hold the max; percentile rank
+    //    instead reflects each hex's relative standing, mean lands at 0.5,
+    //    and ties — e.g. many hexes with count=0 — share an averaged rank)
+
+        numericFields.forEach(f => {
+      const entries = H3_DATA
+        .map((d, idx) => ({ idx, v: +d[f] }))
+        .filter(e => isFinite(e.v));
+
+      // default everything to NaN first (covers missing/non-finite values)
+      H3_DATA.forEach(d => { d['_n_' + f] = NaN; });
+
+      if (!entries.length) return;
+
+      entries.sort((a, b) => a.v - b.v);
+      const n = entries.length;
+
+      // fractional ranking: tied values share the average rank of their group
+      let i = 0;
+      while (i < n) {
+        let j = i;
+        while (j + 1 < n && entries[j + 1].v === entries[i].v) j++;
+        const avgRank = (i + j) / 2; // 0-indexed
+        for (let k = i; k <= j; k++) entries[k].rank = avgRank;
+        i = j + 1;
+      }
+
+      entries.forEach(e => {
+        H3_DATA[e.idx]['_n_' + f] = n > 1 ? e.rank / (n - 1) : 0.5;
+      });
+    });
+
+    // 5. Default all layers on
+    numericFields.forEach(f => { activeLayers[f] = true; });
+
+    // 6. Build UI and render
+    renderMap();
+    zoomToAll();
+    //updateStats();
+    drawScatterChart(H3_DATA);
+
+
+    document.getElementById('loading').classList.add('hidden');
+
+    } catch (err) {
+      document.getElementById('loading').classList.add('hidden');
+      const banner = document.getElementById('error-banner');
+      banner.style.display = 'block';
+      banner.textContent   = '⚠ Error: ' + err.message;
+      console.error(err);
+    }
+  }
+
+
+// ─── SCORING ─────────────────────────────────────────────────────────────────
+function composite(d) {
+  const sector = activeSectorField();
+  const risk   = activeRiskField();
+
+  let vals = [];
+
+  if (sector && isFinite(d['_n_' + sector])) {
+    vals.push(d['_n_' + sector]);
+  }
+
+  if (risk && isFinite(d['_n_' + risk])) {
+    vals.push(d['_n_' + risk]);
+  }
+
+  if (!vals.length) return NaN; // was 0 — this was silently zeroing the mean
+
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+function scoreColor(v) {
+  if (!isFinite(v)) v = 0;
+
+  v = Math.max(0, Math.min(1, v));
+
+  const stops = [
+    [235, 217, 255],  // #ebd9ff - lightest
+    [227, 201, 255],  // #e3c9ff
+    [210, 168, 255],  // #d2a8ff
+    [173, 96,  255],  // #ad60ff
+    [139, 31,  255],  // #8b1fff - darkest
+  ];
+
+  const n = stops.length - 1;
+  const scaled = v * n;
+
+  const i = Math.floor(scaled);
+  const t = scaled - i;
+
+  const c1 = stops[i];
+  const c2 = stops[Math.min(i + 1, n)];
+
+  const r = Math.round(c1[0] + (c2[0] - c1[0]) * t);
+  const g = Math.round(c1[1] + (c2[1] - c1[1]) * t);
+  const b = Math.round(c1[2] + (c2[2] - c1[2]) * t);
+
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+
+// ─── CREATE VSIBLE DATA FUNCTION
+function getVisibleData() {
+  return H3_DATA.filter(d => {
+    const val = composite(d);
+    return isFinite(val) && val > 0;   // remove zero-value hexes
+  });
+}
+// ─── RENDER MAP ──────────────────────────────────────────────────────────────
+function renderMap() {
+  mapLayers.forEach(l => map.removeLayer(l));
+  mapLayers = [];
+
+  if (!allGeoJSON || !H3_DATA.length) return;
+  const sectorField = activeSectorField();
+  const riskField   = activeRiskField();
+
+  // Which fields to show in tooltip
+  const tooltipFields = [sectorField];
+  if (riskField && numericFields.includes(riskField)) tooltipFields.push(riskField);
+
+  const geomType    = allGeoJSON.features[0]?.geometry?.type || '';
+  const usePolygons = ['Polygon','MultiPolygon'].includes(geomType);
+
+  if (usePolygons) {
+    // Attach normalized scores onto features
+    allGeoJSON.features.forEach((f, i) => {
+      const d = H3_DATA[i];
+      if (d) numericFields.forEach(k => { f.properties['_n_' + k] = d['_n_' + k]; });
+    });
+
+    const layer = L.geoJSON(allGeoJSON, {
+      style: f => ({
+        fillColor:   scoreColor(composite(f.properties)),
+        color:       '#fffff',
+        weight:      0.8,
+        fillOpacity: 0.90
+      }),
+      onEachFeature: (f, lyr) => {
+        const score = composite(f.properties);
+        const rows  = tooltipFields.map(k => {
+          const raw = +f.properties[k] || 0;
+          return `<tr>
+            <td style="color:#4f7ea4;padding-right:12px">${friendlyLabel(k)}</td>
+            <td style="font-weight:500;color:#4f7ea4;text-align:right">${raw.toFixed(4)}</td>
+          </tr>`;
+        }).join('');
+        lyr.bindTooltip(
+          `<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;
+                       background:#ffffff;color:#4f7ea4;border:1px solid #d0d7de;
+                       border-radius:4px;padding:10px;min-width:220px";
+                       background:#ffffff;color:#4f7ea4;border:1px solid #d0d7de;>
+            <table style="width:100%;border-collapse:collapse">${rows}</table>
+            <div style="margin-top:6px;border-top:1px solid #d0d7de;padding-top:6px;
+                        display:flex;justify-content:space-between">
+              <span style="color:#d2a8ff">Composite</span>
+              <span style="color:#d2a8ff;font-weight:500">${score.toFixed(4)}</span>
+            </div>
+          </div>`,
+          { sticky: true, opacity: 1 }
+        );
+      }
+    }).addTo(map);
+    mapLayers.push(layer);
+
+  } 
+ 
+}
+
+drawScatterChart(H3_DATA);
+
+// ─── ZOOM ────────────────────────────────────────────────────────────────────
+function zoomToAll() {
+  if (!allGeoJSON) return;
+  const bounds = L.geoJSON(allGeoJSON).getBounds();
+  if (bounds.isValid()) map.fitBounds(bounds, { padding: [20, 20] });
+}
+
+// ─── STATS ───────────────────────────────────────────────────────────────────
+function updateStats() {
+    const visibleData = H3_DATA.filter(d => isFinite(composite(d)));
+  if (!visibleData.length) return;
+
+  const vals = visibleData.map(d => composite(d));
+  const n = vals.length;
+  const mean = vals.reduce((s, v) => s + v, 0) / n;
+  const variance = vals.reduce((s, v) => s + (v - mean) ** 2, 0) / n;
+  const stdDev = Math.sqrt(variance);
+
+  const meanEl = document.getElementById('stat-mean');
+  const meterEl = document.getElementById('meter-fill');
+  if (meanEl) meanEl.textContent = stdDev.toFixed(3);
+  // 0.5 is the theoretical max std dev for values bounded to [0,1]
+  // (an even 50/50 split sitting at the two extremes)
+  if (meterEl) meterEl.style.width = (Math.min(1, stdDev / 0.5) * 100).toFixed(1) + '%';
+}
+
+// ─── CHART ───────────────────────────────────────────────────────────────────
+// Store dot positions 
+let _scatterDots = [];
+
+function drawScatterChart(H3_DATA) {
+  const canvas = document.getElementById('scatter-canvas');
+  const body   = document.getElementById('chart-body');
+  canvas.width  = body.clientWidth;
+  canvas.height = body.clientHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!H3_DATA.length) return;
+
+  const W = canvas.width, H = canvas.height;
+  const PAD   = { left: 44, right: 16, top: 16, bottom: 36 };
+  const plotW = W - PAD.left - PAD.right;
+  const plotH = H - PAD.top  - PAD.bottom;
+
+  const sectorField = activeSectorField();
+  const riskField   = activeRiskField();
+
+  // ── Grid lines ──────────────────────────────────────────────────────────────
+  ctx.lineWidth = 0.5;
+  [0, 0.25, 0.5, 0.75, 1.0].forEach(v => {
+    // horizontal
+    const y = PAD.top + plotH * (1 - v);
+    ctx.strokeStyle = 'rgba(125,133,144,0.2)';
+    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(W - PAD.right, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(125,133,144,0.7)';
+    ctx.font = '9px IBM Plex Mono,monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(v.toFixed(2), PAD.left - 4, y + 3);
+
+    // vertical
+    const x = PAD.left + plotW * v;
+    ctx.beginPath(); ctx.moveTo(x, PAD.top); ctx.lineTo(x, H - PAD.bottom); ctx.stroke();
+    if (v > 0) {
+      ctx.textAlign = 'center';
+      ctx.fillText(v.toFixed(2), x, H - PAD.bottom + 12);
+    }
+  });
+
+  // ── Axes ────────────────────────────────────────────────────────────────────
+  ctx.strokeStyle = 'rgba(125,133,144,0.5)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(PAD.left, PAD.top);
+  ctx.lineTo(PAD.left, H - PAD.bottom);
+  ctx.lineTo(W - PAD.right, H - PAD.bottom);
+  ctx.stroke();
+
+  // ── Axis labels ─────────────────────────────────────────────────────────────
+  ctx.fillStyle = 'rgba(125,133,144,0.9)';
+  ctx.font = '9px IBM Plex Mono,monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('SECTOR SCORE →', PAD.left + plotW / 2, H - 4);
+  ctx.save();
+  ctx.translate(10, PAD.top + plotH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('RISK SCORE →', 0, 0);
+  ctx.restore();
+
+  function sectorColor(v) {
+    if (!isFinite(v)) v = 0;
+  v = Math.max(0, Math.min(1, v));
+  const stops = [
+    [235, 217, 255],
+    [210, 168, 255],
+    [173, 96,  255],
+    [139, 31,  255],
+  ];
+  const n = stops.length - 1;
+  const i = Math.min(Math.floor(v * n), n - 1);
+  const t = (v * n) - i;
+  const c1 = stops[i], c2 = stops[i + 1];
+  const r = Math.round(c1[0] + (c2[0] - c1[0]) * t);
+  const g = Math.round(c1[1] + (c2[1] - c1[1]) * t);
+  const b = Math.round(c1[2] + (c2[2] - c1[2]) * t);
+  return `rgba(${r},${g},${b},0.47)`;
+}
+
+function riskColor(v) {
+    if (!isFinite(v)) v = 0;
+  v = Math.max(0, Math.min(1, v));
+  const stops = [
+    [234, 243, 222],
+    [192, 221, 151],
+    [99,  153, 34 ],
+    [59,  109, 17 ],
+  ];
+  const n = stops.length - 1;
+  const i = Math.min(Math.floor(v * n), n - 1);
+  const t = (v * n) - i;
+  const c1 = stops[i], c2 = stops[i + 1];
+  const r = Math.round(c1[0] + (c2[0] - c1[0]) * t);
+  const g = Math.round(c1[1] + (c2[1] - c1[1]) * t);
+  const b = Math.round(c1[2] + (c2[2] - c1[2]) * t);
+  return `rgba(${r},${g},${b},0.47)`;
+}
+
+  // ── Dots ────────────────────────────────────────────────────────────────────
+  // ── Dots — build hit-test array ─────────────────────────────────────────────
+  _scatterDots = [];
+
+    H3_DATA.forEach(d => {
+    const sx = d['_n_' + sectorField];
+    const ry = d['_n_' + riskField];
+    if (!isFinite(sx) || !isFinite(ry)) return;
+
+    const x = PAD.left + plotW * Math.max(0, Math.min(1, sx));
+    const y = PAD.top  + plotH * (1 - Math.max(0, Math.min(1, ry)));
+
+    // single pass, colored by composite so sector isn't hidden under risk
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = scoreColor(composite(d));
+    ctx.fill();
+
+    _scatterDots.push({ x, y, sx, ry, d, sectorField, riskField });
+  });
+}
+
+// ── Scatter tooltip mouse handler ────────────────────────────────────────────
+(function wireScatterTooltip() {
+  const canvas  = document.getElementById('scatter-canvas');
+  const tooltip = document.getElementById('scatter-tooltip');
+  const body    = document.getElementById('chart-body');
+  const HIT_R   = 7; // px radius for hit detection
+ 
+  canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+ 
+    let hit = null;
+    let bestDist = Infinity;
+    for (const dot of _scatterDots) {
+      const dist = Math.hypot(mx - dot.x, my - dot.y);
+      if (dist < HIT_R && dist < bestDist) { hit = dot; bestDist = dist; }
+    }
+ 
+    if (hit) {
+      const sLabel = friendlyLabel(hit.sectorField);
+      const rLabel = friendlyLabel(hit.riskField);
+      tooltip.innerHTML =
+        `<div style="color:#a0b4c8;margin-bottom:3px">${sLabel}</div>` +
+        `<div style="display:flex;justify-content:space-between;gap:16px">` +
+          `<span style="color:#d2a8ff">Sector</span><span>${hit.sx.toFixed(4)}</span>` +
+        `</div>` +
+        `<div style="display:flex;justify-content:space-between;gap:16px">` +
+          `<span style="color:#88a057">Risk</span><span>${hit.ry.toFixed(4)}</span>` +
+        `</div>` +
+        `<div style="display:flex;justify-content:space-between;gap:16px;border-top:1px solid #3a5168;margin-top:4px;padding-top:4px">` +
+          `<span style="color:#c8daea">Composite</span><span>${composite(hit.d).toFixed(4)}</span>` +
+        `</div>`;
+ 
+      // Position tooltip: keep inside chart-body
+      const bodyRect = body.getBoundingClientRect();
+      let tx = e.clientX - bodyRect.left + 12;
+      let ty = e.clientY - bodyRect.top  - 10;
+      tooltip.style.display = 'block';
+      const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
+      if (tx + tw > bodyRect.width  - 4) tx = (e.clientX - bodyRect.left) - tw - 12;
+      if (ty + th > bodyRect.height - 4) ty = (e.clientY - bodyRect.top)  - th - 10;
+      tooltip.style.left = tx + 'px';
+      tooltip.style.top  = ty + 'px';
+      canvas.style.cursor = 'crosshair';
+    } else {
+      tooltip.style.display = 'none';
+      canvas.style.cursor = '';
+    }
+  });
+ 
+  canvas.addEventListener('mouseleave', () => {
+    tooltip.style.display = 'none';
+  });
+})();
+
+// ─── LEFT PANEL CHARTS ────────────────────────────────────────────────────────
+const CHART_DEFAULTS = {
+  cisa: {
+    labels: ['Communications', 'Dams', 'Emergency Services', 'Energy',
+            'Financial Services', 'Food & Agriculture', 'Government Facilites', 'Healthcare & Public Health',
+            'Transportation', 'Water & Wastewater'],
+    data:   [1009, 561, 807, 514, 1276, 1242, 564, 1896, 2417, 165],
+    colors: ['#90a4ae','#545454','#7d68ae','#77bebe','#40555e', '#88a057', '#008080',
+    '#c2b7db', '#002d74', '#5d88cc']
+  },
+  fema: {
+    labels: ['Communications', 'Energy (Power &Fuel)', 'Food, Hydration, Shelter', 'Health and Medical',
+    'Safety and Security', 'Transportation'],
+    data:   [1098, 635, 1828, 1589, 998, 2421],
+    colors: ['#90a4ae','#77bebe','#88a057','#adba93','#008080','#002d74']
+  }
+};
+
+let cisaChart, femaChart;
+let activeChart = null;
+
+function buildcisaChart() {
+  const d = CHART_DEFAULTS.cisa;
+  cisaChart = new Chart(document.getElementById('canvas-cisa'), {
+    type: 'bar',
+    data: {
+      labels: d.labels,
+      datasets: [{
+        label: 'Total Infrastructure by CISA Sector',
+        data: d.data,
+        backgroundColor: d.colors,
+        borderRadius: 4,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx =>
+              ' Total: ' + ctx.parsed.y.toLocaleString()
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: '#a0b4c8',
+            font: { size: 10 }
+          }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: '#a0b4c8'
+          }
+        }
+      }
+    }
+  });
+}
+
+function buildfemaChart() {
+  const d = CHART_DEFAULTS.fema;
+  femaChart = new Chart(document.getElementById('canvas-fema'), {
+    type: 'bar',
+    data: {
+      labels: d.labels,
+      datasets: [{
+        data: d.data,
+        backgroundColor: d.colors,
+        borderRadius: 4,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+
+        tooltip: {
+          backgroundColor: '#0d1e2c',
+          titleColor: '#c8daea',
+          bodyColor: '#a0b4c8',
+          borderColor: '#3a5168',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx =>
+              ' Total: ' + ctx.parsed.y.toLocaleString()
+          }
+        }
+      },
+
+      scales: {
+        x: {
+          ticks: {
+            color: '#a0b4c8',
+            font: { size: 10 }
+          },
+          grid: {
+            color: '#1e3347'
+          }
+        },
+
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: '#a0b4c8',
+            font: { size: 10 }
+          },
+          grid: {
+            color: '#a0b4c8'
+          }
+        }
+      }
+    }
+  });
+}
+
+function toggleChart(which) {
+  const wrapper = document.getElementById('chart-' + which);
+  const btn = document.getElementById('btn-' + which);
+  const otherKey = which === 'cisa' ? 'fema' : 'cisa';
+  const otherWrapper = document.getElementById('chart-' + otherKey);
+  const otherBtn = document.getElementById('btn-' + otherKey);
+
+  if (activeChart === which) {
+    wrapper.classList.remove('visible');
+    btn.classList.remove('active');
+    activeChart = null;
+    return;
+  }
+  otherWrapper.classList.remove('visible');
+  otherBtn.classList.remove('active');
+  wrapper.classList.add('visible');
+  btn.classList.add('active');
+  activeChart = which;
+
+  if (which === 'cisa' && !cisaChart) buildcisaChart();
+  if (which === 'fema' && !femaChart) buildfemaChart();
+}
+
+function toggleAcc(btn) {
+  const body = btn.nextElementSibling;
+  const isOpen = body.classList.contains('open');
+  btn.classList.toggle('open', !isOpen);
+  body.classList.toggle('open', !isOpen);
+}
+
+
+
+// ─── UPDATE EVERYTHING WITH THE FILTERS ─────────────────────────────────────
+function applyFilters() {
+  renderMap();
+  updateStats();
+  drawScatterChart(H3_DATA);
+}
+
+// ─── START ───────────────────────────────────────────────────────────────────
+init();
+window.addEventListener('resize', () => drawScatterChart(H3_DATA));
+
+</script>
+</body>
+</html>

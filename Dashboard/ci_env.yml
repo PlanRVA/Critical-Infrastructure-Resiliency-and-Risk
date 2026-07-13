@@ -1,0 +1,36 @@
+name: critical_env
+channels:
+  - defaults
+  - conda-forge
+  - pyviz
+  - anaconda
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
+  - https://repo.anaconda.com/pkgs/msys2
+dependencies:
+  - Flask==2.2.5
+  - gunicorn==20.1.0
+  - email_validator==2.1.1
+  - numpy
+  - pandas
+  - geojson==3.1.0
+  - json5 
+  - jsonpatch 
+  - jsonpointer==2.1
+  - folium==0.16.0
+  - fonttools==4.25.0
+  - matplotlib 
+  - Flask-JSON==0.4.0
+  - Flask-Login==0.6.3
+  - Flask-Mail==0.10.0
+  - Flask-Navigation==0.2.0
+  - flask-restx==1.3.0
+  - Flask-SQLAlchemy==3.1.1
+  - Flask-WTF==1.2.1
+  - Fiona==1.9.4.post1
+  - Bootstrap-Flask==2.3.3
+  - dnspython==2.6.1
+  - requests==2.31.0
+  - plotly==5.16.1
+  - bokeh==3.2.1
+  - dotenv
